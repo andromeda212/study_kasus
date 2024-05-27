@@ -1,0 +1,100 @@
+name: Laravel CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  laravel_build:
+    name: Laravel Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install dependencies
+        run: composer install --no-ansi --no-interaction --no-progress --optimize-autoloader
+
+      - name: Copy file example env
+        run: cp .env.example .env
+
+      - name: Generate key
+        run: php artisan key:generate
+
+      - name: Create File Database
+        run: touch database/database.sqlite
+
+      - name: Run Migration Database
+        run: php artisan migrate:fresh --seed
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12'
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Build Node.JS
+        run: npm run build
+
+      - name: Set Job Building status
+        id: job-building-status
+        if: ${{ success() }}
+        run: |
+          curl --location --request POST "https://api.telegram.org/bot7477061792:AAHX3dSIksXKofA0G0Mp55LEuMYEz9fKduw/sendMessage" \
+          --header "Content-Type: application/json" \
+          --data-raw '{"chat_id": "6405420707", "text": "Berhasil Taii --- RPL 2A"}'
+
+  laravel_test:
+    name: Laravel Test
+    runs-on: ubuntu-latest
+    needs: laravel_build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install dependencies
+        run: composer install --no-ansi --no-interaction --no-progress --optimize-autoloader
+
+      - name: Copy file example env
+        run: cp .env.example .env
+
+      - name: Generate key
+        run: php artisan key:generate
+
+      - name: Create File Database
+        run: touch database/database.sqlite
+
+      - name: Run Migration Database
+        run: php artisan migrate:fresh --seed
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12'
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Build Node.JS
+        run: npm run build
+
+      - name: Run tests
+        run: ./vendor/bin/phpunit
